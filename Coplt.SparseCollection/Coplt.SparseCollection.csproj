@@ -6,6 +6,22 @@
         <LangVersion>12.0</LangVersion>
         <Version>0.1.0</Version>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <RepositoryUrl>https://github.com/2A5F/Coplt.SparseCollection</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/2A5F/Coplt.SparseCollection</PackageProjectUrl>
+        <Description>Fast, cache friendly, continuous memory sparse collections with CRUD all O(1)</Description>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="..\LICENSE.md">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+      <None Include="..\README.md">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+    </ItemGroup>
 
 </Project>

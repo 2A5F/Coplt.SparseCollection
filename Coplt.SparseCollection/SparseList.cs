@@ -9,7 +9,7 @@ namespace Coplt.SparseCollection;
 /// <summary>
 /// A List with O(1) CRUD and continuous memory, no index stability
 /// </summary>
-public class SparseList<T> : IList<T>
+public class SparseList<T> : IList<T>, IReadOnlyList<T>
 {
     public bool IsReadOnly => false;
 
@@ -93,7 +93,7 @@ public class SparseList<T> : IList<T>
     /// <summary>
     /// Contains id
     /// </summary>
-    public bool Contains(int id) => inner.HasId(id, out _);
+    public bool ContainsId(int id) => inner.HasId(id, out _);
 
     public bool TryGetValue(int id, out T value)
     {
@@ -104,6 +104,18 @@ public class SparseList<T> : IList<T>
         }
         value = Values[index];
         return true;
+    }
+
+    /// <summary>
+    /// Get index by id
+    /// </summary>
+    public int IndexById(int id)
+    {
+        if (!inner.HasId(id, out var index))
+        {
+            return index;
+        }
+        return -1;
     }
 
     public int IndexOf(T item)
