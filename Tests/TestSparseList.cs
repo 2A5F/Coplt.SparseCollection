@@ -61,6 +61,6 @@ public class TestSparseList
         Console.WriteLine(str);
         Console.WriteLine(id);
         Assert.That(str, Is.EqualTo("0, 1, 2, 3, 7, 5, 6, 123"));
-        Assert.That(id, Is.EqualTo(8));
+        Assert.That(id.Id, Is.EqualTo(8));
     }
 }

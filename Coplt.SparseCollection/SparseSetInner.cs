@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Coplt.SparseCollection.Internal;
 
@@ -13,10 +15,10 @@ public struct SparseSetInner
 
     public int Length => cur;
 
-    public Span<int> values => packed.Slice(0, cur);
+    public Span<SparseId> values => packed.Slice(0, cur);
 
-    public Span<int> packed => arr.AsSpan(0, cap);
-    public Span<int> sparse => arr.AsSpan(cap);
+    public Span<SparseId> packed => MemoryMarshal.Cast<int, SparseId>(arr.AsSpan(0, cap * 2));
+    public Span<SparseIndex> sparse => MemoryMarshal.Cast<int, SparseIndex>(arr.AsSpan(cap * 2));
 
     public SparseSetInner() : this(DefaultCap) { }
 
@@ -24,7 +26,7 @@ public struct SparseSetInner
     {
         if (cap <= 0) cap = DefaultCap;
         this.cap = cap;
-        arr = new int[cap * 2];
+        arr = new int[cap * 3];
     }
 
     /// <summary>
@@ -39,56 +41,57 @@ public struct SparseSetInner
     public void Scaling(int new_cap)
     {
         if (new_cap <= cap) throw new ArgumentOutOfRangeException(nameof(new_cap));
-        var new_arr = new int[new_cap * 2];
-        values.CopyTo(new_arr.AsSpan(0, new_cap));
-        sparse.CopyTo(new_arr.AsSpan(new_cap));
+        var new_arr = new int[new_cap * 3];
+        values.CopyTo(MemoryMarshal.Cast<int, SparseId>(new_arr));
+        sparse.CopyTo(MemoryMarshal.Cast<int, SparseIndex>(new_arr.AsSpan(new_cap * 2)));
         arr = new_arr;
         cap = new_cap;
     }
 
     /// <param name="id">the id</param>
     /// <returns>the index</returns>
-    public int ListAdd(out int id)
+    public SparseIndex ListAdd(out SparseId id)
     {
         var c = cur++;
         var v = packed[c];
-        if (v == 0) v = c;
-        else v -= 1;
-        packed[c] = v + 1;
-        sparse[v] = c + 1;
+        if (v.IsEmpty) v = new(c);
+        packed[c] = v;
+        sparse[v.Id] = c;
         id = v;
         return c;
     }
 
+    private bool IsIdOutOfRange(SparseId id) => id.IsEmpty || id.Id < 0 || id.Id >= cap;
+    private bool IsIndexOutOfRange(SparseIndex i) => i.Index <= 0 || i.Index >= Length;
+
     /// <returns>the index</returns>
-    public int SetAdd(int id)
+    public SparseIndex SetAdd(SparseId id)
     {
-        if (id < 0 || id >= cap) throw new IndexOutOfRangeException(nameof(id));
+        if (IsIdOutOfRange(id)) throw new IndexOutOfRangeException(nameof(id));
         var c = cur++;
-        packed[c] = id + 1;
-        sparse[id] = c + 1;
+        packed[c] = id;
+        sparse[id.Id] = c;
         return c;
     }
 
     /// <param name="id">the id</param>
     /// <param name="i">the index</param>
-    public bool HasId(int id, out int i)
+    public bool HasId(SparseId id, out SparseIndex i)
     {
-        if (id < 0 || id >= cap) throw new IndexOutOfRangeException(nameof(id));
-        i = sparse[id];
-        if (i == 0) return false;
-        i--;
+        if (IsIdOutOfRange(id)) throw new IndexOutOfRangeException(nameof(id));
+        i = sparse[id.Id];
+        if (i.IsEmpty) return false;
+        if (packed[i] != id) return false;
         return true;
     }
 
     /// <param name="i">the index</param>
     /// <param name="id">the id</param>
-    public bool HasIndex(int i, out int id)
+    public bool HasIndex(SparseIndex i, out SparseId id)
     {
-        if (i < 0 || i >= Length) throw new IndexOutOfRangeException(nameof(i));
+        if (IsIndexOutOfRange(i)) throw new IndexOutOfRangeException(nameof(i));
         id = packed[i];
-        if (id == 0) return false;
-        id--;
+        if (id.IsEmpty) return false;
         return true;
     }
 
@@ -96,11 +99,11 @@ public struct SparseSetInner
     /// <param name="id">the id</param>
     /// <param name="i">the index</param>
     /// <param name="last_i">the last index</param>
-    public bool RemoveId(int id, out int i, out int last_i)
+    public bool RemoveId(SparseId id, out SparseIndex i, out SparseIndex last_i)
     {
         if (!HasId(id, out i))
         {
-            last_i = 0;
+            last_i = default;
             return false;
         }
         DoRemove(i, id, out last_i);
@@ -111,27 +114,27 @@ public struct SparseSetInner
     /// <param name="i">the index</param>
     /// <param name="id">the id</param>
     /// <param name="last_i">the last index</param>
-    public bool RemoveAt(int i, out int id, out int last_i)
+    public bool RemoveAt(SparseIndex i, out SparseId id, out SparseIndex last_i)
     {
         if (!HasIndex(i, out id))
         {
-            last_i = 0;
+            last_i = default;
             return false;
         }
         DoRemove(i, id, out last_i);
         return true;
     }
 
-    public void DoRemove(int i, int id, out int last_i)
+    public void DoRemove(SparseIndex i, SparseId id, out SparseIndex last_i)
     {
         last_i = --cur;
         if (last_i != i)
         {
-            var last = packed[last_i] - 1;
-            sparse[last] = i + 1;
-            packed[i] = last + 1;
-            packed[last_i] = id + 1;
+            var last = packed[last_i];
+            sparse[last.Id] = i;
+            packed[i] = last;
+            packed[last_i] = id.Next();
         }
-        sparse[id] = 0;
+        sparse[id.Id] = default;
     }
 }

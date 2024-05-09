@@ -51,7 +51,7 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
 
     /// <inheritdoc cref="ICollection{T}.Add"/>
     /// <returns>id</returns>
-    public int Add(T item)
+    public SparseId Add(T item)
     {
         if (Count >= Cap) Grow();
         var i = inner.ListAdd(out var id);
@@ -62,9 +62,9 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
     /// <summary>
     /// Remove by id
     /// </summary>
-    public bool RemoveById(int id)
+    public bool RemoveById(SparseId id)
     {
-        if (!inner.RemoveAt(id, out var index, out var last_i)) return false;
+        if (!inner.RemoveId(id, out var index, out var last_i)) return false;
         _values[index] = _values[last_i];
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) _values[last_i] = default!;
         return true;
@@ -93,9 +93,9 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
     /// <summary>
     /// Contains id
     /// </summary>
-    public bool ContainsId(int id) => inner.HasId(id, out _);
+    public bool ContainsId(SparseId id) => inner.HasId(id, out _);
 
-    public bool TryGetValue(int id, out T value)
+    public bool TryGetValue(SparseId id, out T value)
     {
         if (!inner.HasId(id, out var index))
         {
@@ -109,7 +109,7 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
     /// <summary>
     /// Get index by id
     /// </summary>
-    public int IndexById(int id)
+    public int IndexById(SparseId id)
     {
         if (!inner.HasId(id, out var index))
         {
@@ -169,7 +169,7 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
         public void Dispose() { }
     }
 
-    public struct IdsEnumerator(SparseList<T> self) : IEnumerator<int>, IEnumerable<int>
+    public struct IdsEnumerator(SparseList<T> self) : IEnumerator<SparseId>, IEnumerable<SparseId>
     {
         private int i = 0;
 
@@ -188,18 +188,18 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
         {
             i = 0;
         }
-        public int Current { get; private set; }
+        public SparseId Current { get; private set; }
 
         object IEnumerator.Current => Current;
 
         public void Dispose() { }
 
-        IEnumerator<int> IEnumerable<int>.GetEnumerator() => this;
+        IEnumerator<SparseId> IEnumerable<SparseId>.GetEnumerator() => this;
         IEnumerator IEnumerable.GetEnumerator() => this;
     }
 
     public struct EntryEnumerator(SparseList<T> self)
-        : IEnumerator<KeyValuePair<int, T>>, IEnumerable<KeyValuePair<int, T>>
+        : IEnumerator<KeyValuePair<SparseId, T>>, IEnumerable<KeyValuePair<SparseId, T>>
     {
         private int i = 0;
 
@@ -218,13 +218,13 @@ public class SparseList<T> : IList<T>, IReadOnlyList<T>
         {
             i = 0;
         }
-        public KeyValuePair<int, T> Current { get; private set; }
+        public KeyValuePair<SparseId, T> Current { get; private set; }
 
         object IEnumerator.Current => Current;
 
         public void Dispose() { }
 
-        IEnumerator<KeyValuePair<int, T>> IEnumerable<KeyValuePair<int, T>>.GetEnumerator() => this;
+        IEnumerator<KeyValuePair<SparseId, T>> IEnumerable<KeyValuePair<SparseId, T>>.GetEnumerator() => this;
         IEnumerator IEnumerable.GetEnumerator() => this;
     }
 }

@@ -1,3 +1,4 @@
+using Coplt.SparseCollection;
 using Coplt.SparseCollection.Internal;
 
 namespace Tests;
@@ -24,13 +25,15 @@ public class TestSparseSetInner
     [Test]
     public void TestSparseSetInnerSetAdd()
     {
+        var id3 = new SparseId(3);
+        var id5 = new SparseId(5);
         var a = new SparseSetInner();
-        var i3_0 = a.SetAdd(3);
-        var i5_0 = a.SetAdd(5);
-        Assert.That(a.HasId(3, out var i3_1), Is.True);
-        Assert.That(a.HasId(5, out var i5_1), Is.True);
-        Assert.That(a.RemoveId(3, out var i3_2, out var i3_3), Is.True);
-        Assert.That(a.RemoveId(5, out var i5_2, out var i5_3), Is.True);
+        var i3_0 = a.SetAdd(id3);
+        var i5_0 = a.SetAdd(id5);
+        Assert.That(a.HasId(id3, out var i3_1), Is.True);
+        Assert.That(a.HasId(id5, out var i5_1), Is.True);
+        Assert.That(a.RemoveId(id3, out var i3_2, out var i3_3), Is.True);
+        Assert.That(a.RemoveId(id5, out var i5_2, out var i5_3), Is.True);
         Console.WriteLine($"{i3_0}, {i3_1}, {i3_2}, {i3_3}");
         Console.WriteLine($"{i5_0}, {i5_1}, {i5_2}, {i5_3}");
     }
@@ -38,15 +41,18 @@ public class TestSparseSetInner
     [Test]
     public void TestSparseSetInnerGrow()
     {
+        var id3 = new SparseId(3);
+        var id5 = new SparseId(5);
+        var id7 = new SparseId(7);
         var a = new SparseSetInner(8);
-        a.SetAdd(3);
-        a.SetAdd(5);
-        Assert.That(a.HasId(3, out _), Is.True);
-        Assert.That(a.HasId(5, out _), Is.True);
+        a.SetAdd(id3);
+        a.SetAdd(id5);
+        Assert.That(a.HasId(id3, out _), Is.True);
+        Assert.That(a.HasId(id5, out _), Is.True);
         a.Grow();
-        Assert.That(a.HasId(3, out _), Is.True);
-        Assert.That(a.HasId(5, out _), Is.True);
-        a.SetAdd(7);
-        Assert.That(a.HasId(7, out _), Is.True);
+        Assert.That(a.HasId(id3, out _), Is.True);
+        Assert.That(a.HasId(id5, out _), Is.True);
+        a.SetAdd(id7);
+        Assert.That(a.HasId(id7, out _), Is.True);
     }
 }
