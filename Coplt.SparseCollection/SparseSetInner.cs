@@ -62,7 +62,7 @@ public struct SparseSetInner
     }
 
     private bool IsIdOutOfRange(SparseId id) => id.IsEmpty || id.Id < 0 || id.Id >= cap;
-    private bool IsIndexOutOfRange(SparseIndex i) => i.Index <= 0 || i.Index >= Length;
+    private bool IsIndexOutOfRange(SparseIndex i) => i.Index <= 0 || i.Index > Length;
 
     /// <returns>the index</returns>
     public SparseIndex SetAdd(SparseId id)
@@ -78,7 +78,11 @@ public struct SparseSetInner
     /// <param name="i">the index</param>
     public bool HasId(SparseId id, out SparseIndex i)
     {
-        if (IsIdOutOfRange(id)) throw new IndexOutOfRangeException(nameof(id));
+        if (IsIdOutOfRange(id)) 
+        {
+            i = default;
+            return false;
+        }
         i = sparse[id.Id];
         if (i.IsEmpty) return false;
         if (packed[i] != id) return false;
@@ -89,7 +93,11 @@ public struct SparseSetInner
     /// <param name="id">the id</param>
     public bool HasIndex(SparseIndex i, out SparseId id)
     {
-        if (IsIndexOutOfRange(i)) throw new IndexOutOfRangeException(nameof(i));
+        if (IsIndexOutOfRange(i))
+        {
+            id = default;
+            return false;
+        }
         id = packed[i];
         if (id.IsEmpty) return false;
         return true;

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Coplt.SparseCollection;
+namespace Coplt.SparseCollection.Internal;
 
 [StructLayout(LayoutKind.Explicit, Size = sizeof(uint))]
 public readonly record struct SparseIndex : IComparable<SparseIndex>, IComparable
