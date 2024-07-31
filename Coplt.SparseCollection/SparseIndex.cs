@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Coplt.SparseCollection.Internal;
@@ -9,25 +10,30 @@ public readonly record struct SparseIndex : IComparable<SparseIndex>, IComparabl
     [FieldOffset(0)]
     public readonly int Index;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private SparseIndex(int Index)
     {
         this.Index = Index;
     }
 
-    public bool IsEmpty => Index == 0;
+    public bool IsEmpty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Index == 0;
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator SparseIndex(int Index) => new(Index + 1);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator int(SparseIndex Index) => Index.Index - 1;
 
     public override string ToString() => IsEmpty ? "Empty" : (Index - 1).ToString();
 
     #region CompareTo
 
-    public int CompareTo(SparseIndex other)
-    {
-        return Index.CompareTo(other.Index);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int CompareTo(SparseIndex other) => Index.CompareTo(other.Index);
     public int CompareTo(object? obj)
     {
         if (ReferenceEquals(null, obj)) return 1;
@@ -35,22 +41,15 @@ public readonly record struct SparseIndex : IComparable<SparseIndex>, IComparabl
             ? CompareTo(other)
             : throw new ArgumentException($"Object must be of type {nameof(SparseIndex)}");
     }
-    public static bool operator <(SparseIndex left, SparseIndex right)
-    {
-        return left.CompareTo(right) < 0;
-    }
-    public static bool operator >(SparseIndex left, SparseIndex right)
-    {
-        return left.CompareTo(right) > 0;
-    }
-    public static bool operator <=(SparseIndex left, SparseIndex right)
-    {
-        return left.CompareTo(right) <= 0;
-    }
-    public static bool operator >=(SparseIndex left, SparseIndex right)
-    {
-        return left.CompareTo(right) >= 0;
-    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator <(SparseIndex left, SparseIndex right) => left.CompareTo(right) < 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator >(SparseIndex left, SparseIndex right) => left.CompareTo(right) > 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator <=(SparseIndex left, SparseIndex right) => left.CompareTo(right) <= 0;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator >=(SparseIndex left, SparseIndex right) => left.CompareTo(right) >= 0;
 
     #endregion
 }

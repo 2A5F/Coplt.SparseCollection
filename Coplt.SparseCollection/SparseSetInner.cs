@@ -7,32 +7,69 @@ namespace Coplt.SparseCollection.Internal;
 // hint: ListAdd and SetAdd cannot be mixed use
 public struct SparseSetInner
 {
+    #region Consts
+
     private const int DefaultCap = 64;
 
-    private int[] arr;
-    private int cap;
-    private int cur;
+    #endregion
 
-    public int Length => cur;
+    #region Fields
 
-    public Span<SparseId> values => packed.Slice(0, cur);
+    private int[] m_arr;
+    private int m_cap;
+    private int m_cur;
 
-    public Span<SparseId> packed => MemoryMarshal.Cast<int, SparseId>(arr.AsSpan(0, cap * 2));
-    public Span<SparseIndex> sparse => MemoryMarshal.Cast<int, SparseIndex>(arr.AsSpan(cap * 2));
+    #endregion
 
+    #region Getter
+
+    public int Length
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => m_cur;
+    }
+
+    public Span<SparseId> values
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => packed.Slice(0, m_cur);
+    }
+
+    public Span<SparseId> packed
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => MemoryMarshal.Cast<int, SparseId>(m_arr.AsSpan(0, m_cap * 2));
+    }
+    public Span<SparseIndex> sparse
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => MemoryMarshal.Cast<int, SparseIndex>(m_arr.AsSpan(m_cap * 2));
+    }
+
+    #endregion
+
+    #region Ctor
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SparseSetInner() : this(DefaultCap) { }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SparseSetInner(int cap)
     {
         if (cap <= 0) cap = DefaultCap;
-        this.cap = cap;
-        arr = new int[cap * 3];
+        m_cap = cap;
+        m_arr = new int[cap * 3];
     }
+
+    #endregion
+
+    #region Grow
 
     /// <summary>
     /// resize cap * 2
     /// </summary>
-    public void Grow() => Scaling(cap * 2);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Grow() => Scaling(m_cap * 2);
 
     /// <summary>
     /// resize
@@ -40,19 +77,32 @@ public struct SparseSetInner
     /// <param name="new_cap">must > cap</param>
     public void Scaling(int new_cap)
     {
-        if (new_cap <= cap) throw new ArgumentOutOfRangeException(nameof(new_cap));
+        if (new_cap <= m_cap) throw new ArgumentOutOfRangeException(nameof(new_cap));
         var new_arr = new int[new_cap * 3];
         values.CopyTo(MemoryMarshal.Cast<int, SparseId>(new_arr));
         sparse.CopyTo(MemoryMarshal.Cast<int, SparseIndex>(new_arr.AsSpan(new_cap * 2)));
-        arr = new_arr;
-        cap = new_cap;
+        m_arr = new_arr;
+        m_cap = new_cap;
     }
+
+    #endregion
+
+    #region Id Index Utils
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsIdOutOfRange(SparseId id) => id.IsEmpty || id.Id < 0 || id.Id >= m_cap;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsIndexOutOfRange(SparseIndex i) => i.Index <= 0 || i.Index > Length;
+
+    #endregion
+
+    #region ListAdd
 
     /// <param name="id">the id</param>
     /// <returns>the index</returns>
     public SparseIndex ListAdd(out SparseId id)
     {
-        var c = cur++;
+        var c = m_cur++;
         var v = packed[c];
         if (v.IsEmpty) v = new(c);
         packed[c] = v;
@@ -61,24 +111,53 @@ public struct SparseSetInner
         return c;
     }
 
-    private bool IsIdOutOfRange(SparseId id) => id.IsEmpty || id.Id < 0 || id.Id >= cap;
-    private bool IsIndexOutOfRange(SparseIndex i) => i.Index <= 0 || i.Index > Length;
+    #endregion
+
+    #region SetAdd
 
     /// <returns>the index</returns>
     public SparseIndex SetAdd(SparseId id)
     {
         if (IsIdOutOfRange(id)) throw new IndexOutOfRangeException(nameof(id));
-        var c = cur++;
+        var c = m_cur++;
         packed[c] = id;
         sparse[id.Id] = c;
         return c;
     }
 
+    #endregion
+
+    #region SetAddOrGetAutoGrow
+
+    /// <returns>the index</returns>
+    public SparseIndex SetAddOrGetAutoGrow(SparseId id, out bool old)
+    {
+        if (IsIdOutOfRange(id)) Scaling((int)Utils.RoundUpToPowerOf2((uint)(id.Id + 1)));
+        var i = sparse[id.Id];
+        if (i.IsEmpty)
+        {
+            old = false;
+            var c = m_cur++;
+            packed[c] = id;
+            sparse[id.Id] = c;
+            return c;
+        }
+        else
+        {
+            old = true;
+            return i;
+        }
+    }
+
+    #endregion
+
+    #region Has
+
     /// <param name="id">the id</param>
     /// <param name="i">the index</param>
     public bool HasId(SparseId id, out SparseIndex i)
     {
-        if (IsIdOutOfRange(id)) 
+        if (IsIdOutOfRange(id))
         {
             i = default;
             return false;
@@ -102,6 +181,10 @@ public struct SparseSetInner
         if (id.IsEmpty) return false;
         return true;
     }
+
+    #endregion
+
+    #region Remove
 
     /// <summary>remove and swap value at i and last_i</summary>
     /// <param name="id">the id</param>
@@ -135,7 +218,7 @@ public struct SparseSetInner
 
     public void DoRemove(SparseIndex i, SparseId id, out SparseIndex last_i)
     {
-        last_i = --cur;
+        last_i = --m_cur;
         if (last_i != i)
         {
             var last = packed[last_i];
@@ -145,4 +228,6 @@ public struct SparseSetInner
         }
         sparse[id.Id] = default;
     }
+
+    #endregion
 }

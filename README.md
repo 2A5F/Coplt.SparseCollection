@@ -8,22 +8,36 @@ Fast, cache friendly, continuous memory sparse collections with CRUD all O(1)
 
 ### Example
 
-```csharp
-var list = new SparseList<int>();
+- `SparseList`
 
-var id = list.Add(123);
-list.Add(456);
-list.Add(789);
+    ```csharp
+    var list = new SparseList<int>();
+    
+    var id = list.Add(123);
+    list.Add(456);
+    list.Add(789);
+    
+    if (list.ContainsId(id)) { }
+    
+    if (list.TryGetValue(id, out var v) { }
+    
+    var index = list.IndexById(id);
+    list[index] = 111;
+    
+    list.RemoveAt(1);
+    list.RemoveById(id);
+    
+    Span<int> span = list.Values;
+    ```
 
-if (list.ContainsId(id)) { }
+- `PagedSparseSet`
 
-if (list.TryGetValue(id, out var v) { }
-
-var index = list.IndexById(id);
-list[index] = 111;
-
-list.RemoveAt(1);
-list.RemoveById(id);
-
-Span<int> span = list.Values;
-```
+    ```csharp
+    var list = new SparseList<int>();
+    var set = new PagedSparseSet<string>();
+    for (int i = 0; i < 1000; i++)
+    {
+        var id = list.Add(i);
+        set.Add(id, $"{i}");
+    }
+    ```
